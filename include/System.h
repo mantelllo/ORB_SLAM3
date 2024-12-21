@@ -192,6 +192,10 @@ public:
     void InsertTrackTime(double& time);
 #endif
 
+    // Map structure that stores the pointers to all KeyFrames and MapPoints.
+    //Map* mpMap;
+    Atlas* mpAtlas;
+
 private:
 
     void SaveAtlas(int type);
@@ -208,9 +212,6 @@ private:
     // KeyFrame database for place recognition (relocalization and loop detection).
     KeyFrameDatabase* mpKeyFrameDatabase;
 
-    // Map structure that stores the pointers to all KeyFrames and MapPoints.
-    //Map* mpMap;
-    Atlas* mpAtlas;
 
     // Tracker. It receives a frame and computes the associated camera pose.
     // It also decides when to insert a new keyframe, create some new MapPoints and

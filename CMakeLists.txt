@@ -12,6 +12,10 @@ set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall   -O3")
 set(CMAKE_C_FLAGS_RELEASE "${CMAKE_C_FLAGS_RELEASE} -march=native")
 set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -march=native")
 
+set(CMAKE_CXX_STANDARD 14)  # Or 17 if preferred
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
+set(CMAKE_CXX_EXTENSIONS OFF)
+
 # Check C++11 or C++0x support
 include(CheckCXXCompilerFlag)
 CHECK_CXX_COMPILER_FLAG("-std=c++11" COMPILER_SUPPORTS_CXX11)
@@ -134,6 +138,20 @@ if(realsense2_FOUND)
     ${realsense2_LIBRARY}
     )
 endif()
+
+
+find_package(pybind11 REQUIRED)
+
+# Create Python bindings using pybind11
+pybind11_add_module(orbslam3_python src/Python.cpp)
+
+# Link OpenCV and ORB_SLAM3 libraries to the Python bindings
+target_link_libraries(orbslam3_python PRIVATE ${OpenCV_LIBS} ORB_SLAM3)
+
+set_target_properties(orbslam3_python PROPERTIES
+    PREFIX ""
+    SUFFIX ".so"
+)
 
 
 # Build examples
