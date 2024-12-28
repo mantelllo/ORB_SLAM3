@@ -5,6 +5,9 @@ IF(NOT CMAKE_BUILD_TYPE)
   SET(CMAKE_BUILD_TYPE Release)
 ENDIF()
 
+set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -O0")
+set(CMAKE_C_FLAGS_DEBUG "${CMAKE_C_FLAGS_DEBUG} -O0")
+
 MESSAGE("Build type: " ${CMAKE_BUILD_TYPE})
 
 set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS}  -Wall   -O3")
@@ -44,6 +47,7 @@ MESSAGE(${OpenCV_VERSION})
 
 find_package(Eigen3 3.1.0 REQUIRED)
 find_package(Pangolin REQUIRED)
+find_package(octomap REQUIRED)
 find_package(realsense2)
 
 include_directories(
@@ -53,7 +57,12 @@ ${PROJECT_SOURCE_DIR}/include/CameraModels
 ${PROJECT_SOURCE_DIR}/Thirdparty/Sophus
 ${EIGEN3_INCLUDE_DIR}
 ${Pangolin_INCLUDE_DIRS}
+${OCTOMAP_INCLUDE_DIRS}
 )
+
+message(STATUS "1 OCTOMAP_LIBRARIES: ${OCTOMAP_LIBRARIES}")
+message(STATUS "1 OCTOMAP_INCLUDE_DIRS: ${OCTOMAP_INCLUDE_DIRS}")
+
 
 set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${PROJECT_SOURCE_DIR}/lib)
 
@@ -86,6 +95,10 @@ src/GeometricTools.cc
 src/TwoViewReconstruction.cc
 src/Config.cc
 src/Settings.cc
+src/OccGrid.cpp
+src/OccThread.cpp
+include/OccGrid.h
+include/OccThread.h
 include/System.h
 include/Tracking.h
 include/LocalMapping.h
@@ -123,6 +136,7 @@ target_link_libraries(${PROJECT_NAME}
 ${OpenCV_LIBS}
 ${EIGEN3_LIBS}
 ${Pangolin_LIBRARIES}
+${OCTOMAP_LIBRARIES}
 ${PROJECT_SOURCE_DIR}/Thirdparty/DBoW2/lib/libDBoW2.so
 ${PROJECT_SOURCE_DIR}/Thirdparty/g2o/lib/libg2o.so
 -lboost_serialization
@@ -140,13 +154,19 @@ if(realsense2_FOUND)
 endif()
 
 
+cmake_policy(SET CMP0054 NEW)
+cmake_policy(SET CMP0057 NEW)
+
+set(PYBIND11_FINDPYTHON ON)
 find_package(pybind11 REQUIRED)
 
+
 # Create Python bindings using pybind11
-pybind11_add_module(orbslam3_python src/Python.cpp)
+pybind11_add_module(orbslam3_python
+        src/Python.cpp)
 
 # Link OpenCV and ORB_SLAM3 libraries to the Python bindings
-target_link_libraries(orbslam3_python PRIVATE ${OpenCV_LIBS} ORB_SLAM3)
+target_link_libraries(orbslam3_python PRIVATE ${OpenCV_LIBS} ${Octomap_LIBRARIES} ORB_SLAM3)
 
 set_target_properties(orbslam3_python PROPERTIES
     PREFIX ""
@@ -161,6 +181,7 @@ set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${PROJECT_SOURCE_DIR}/Examples/RGB-D)
 
 add_executable(rgbd_tum
         Examples/RGB-D/rgbd_tum.cc)
+
 target_link_libraries(rgbd_tum ${PROJECT_NAME})
 
 if(realsense2_FOUND)
@@ -209,7 +230,8 @@ set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${PROJECT_SOURCE_DIR}/Examples/Monocular)
 
 add_executable(mono_tum
         Examples/Monocular/mono_tum.cc)
-target_link_libraries(mono_tum ${PROJECT_NAME})
+
+target_link_libraries(mono_tum ${Octomap_LIBS} ${PROJECT_NAME})
 
 add_executable(mono_kitti
         Examples/Monocular/mono_kitti.cc)
@@ -217,7 +239,7 @@ target_link_libraries(mono_kitti ${PROJECT_NAME})
 
 add_executable(mono_euroc
         Examples/Monocular/mono_euroc.cc)
-target_link_libraries(mono_euroc ${PROJECT_NAME})
+target_link_libraries(mono_euroc ${OCTOMAP_LIBRARIES} ${PROJECT_NAME})
 
 add_executable(mono_tum_vi
         Examples/Monocular/mono_tum_vi.cc)

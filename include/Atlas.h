@@ -25,11 +25,14 @@
 #include "GeometricCamera.h"
 #include "Pinhole.h"
 #include "KannalaBrandt8.h"
+#include "OccGrid.h"
 
 #include <set>
 #include <mutex>
 #include <boost/serialization/vector.hpp>
 #include <boost/serialization/export.hpp>
+
+
 
 
 namespace ORB_SLAM3
@@ -42,6 +45,7 @@ class KeyFrameDatabase;
 class Frame;
 class KannalaBrandt8;
 class Pinhole;
+class OccGrid;
 
 //BOOST_CLASS_EXPORT_GUID(Pinhole, "Pinhole")
 //BOOST_CLASS_EXPORT_GUID(KannalaBrandt8, "KannalaBrandt8")
@@ -86,6 +90,7 @@ public:
     // Method for change components in the current map
     void AddKeyFrame(KeyFrame* pKF);
     void AddMapPoint(MapPoint* pMP);
+
     //void EraseMapPoint(MapPoint* pMP);
     //void EraseKeyFrame(KeyFrame* pKF);
 
@@ -103,9 +108,11 @@ public:
     // Method for get data in current map
     std::vector<KeyFrame*> GetAllKeyFrames();
     std::vector<MapPoint*> GetAllMapPoints();
+    std::vector<OccGrid*> GetOccupancyGrids();
     std::vector<MapPoint*> GetReferenceMapPoints();
-
     vector<Map*> GetAllMaps();
+
+    void GenerateNewOccupancyGrid();
 
     int CountMaps();
 
@@ -147,6 +154,8 @@ protected:
     std::vector<Map*> mvpBackupMaps;
 
     Map* mpCurrentMap;
+
+    std::vector<OccGrid*> mvpOccupancyGrids;
 
     std::vector<GeometricCamera*> mvpCameras;
 

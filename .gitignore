@@ -94,3 +94,6 @@ borrar/*
 CMakeFiles/
 Thirdparty/Catch2/
 Thirdparty/Pangolin/
+cmake-build-debug
+cmake-build-release
+*.bt
