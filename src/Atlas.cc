@@ -427,6 +427,7 @@ void Atlas::GenerateNewOccupancyGrid() {
     << " idx=" << mvpOccupancyGrids.size()-1
     << " p=" << pOG->nTotalPoints
     << " KF=" << pOG->nTotalKeyFrames
+    << " avgDist=" << pOG->nAverageDistance
     << " ms=" <<  ms_int.count() << endl;
 }
 

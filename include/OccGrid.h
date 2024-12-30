@@ -26,6 +26,7 @@ class OccGrid
 
         unsigned int nTotalPoints;
         unsigned int nTotalKeyFrames;
+        double nAverageDistance;
 
     protected:
         OcTree* pOT;

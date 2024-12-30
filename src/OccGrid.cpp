@@ -15,10 +15,11 @@ OccGrid::OccGrid(Atlas* pAtlas, float resolution) {
     std::vector<KeyFrame*> mvpKeyFrames = pAtlas->GetAllKeyFrames();
     Pointcloud pPointcloud;
 
-    const int N_MAPPOINT_OBS_MIN = 3;
-    const int N_MAPPOINT_MAX_DST = 10;
+    const int N_MAPPOINT_OBS_MIN = 5;
+    const int N_MAPPOINT_MAX_DST = 8;
 
-    int totalPoints = 0;
+    int totalPoints = 0, lastKFTotalPoints = 0;
+    double totalDistance = 0, lastKFTotalDistance = 0;
 
     //Iterate over KeyFrames
     for(size_t i=0, iend=mvpKeyFrames.size(); i<iend; i++) {
@@ -30,25 +31,44 @@ OccGrid::OccGrid(Atlas* pAtlas, float resolution) {
 
         for(size_t j=0, jend=mvpMapPoints.size(); j<jend; j++) {
             MapPoint* pMP = mvpMapPoints[j];
-            if (!pMP
-                || pMP->isBad()
+            if (!pMP) continue;
+
+            Sophus::Vector3f positionMP = pMP->GetWorldPos();
+            double nDistance = sqrt(
+                pow(positionKF.x() - positionMP.x(), 2) +
+                pow(positionKF.y() - positionMP.y(), 2) +
+                pow(positionKF.z() - positionMP.z(), 2)
+            );
+            if (pMP->isBad()
                 || pMP->Observations() < N_MAPPOINT_OBS_MIN
-                || pMP->GetMaxDistanceInvariance() > N_MAPPOINT_MAX_DST
+                || nDistance > N_MAPPOINT_MAX_DST
                 )
                 continue;
 
-            Sophus::Vector3f positionMP = pMP->GetWorldPos();
-            pPointcloud.push_back((float)positionMP.x(),
-                                  (float)positionMP.y(),
-                                  (float)positionMP.z());
+
+            pPointcloud.push_back((float)positionMP.z(),
+                                  (float)-positionMP.x(),
+                                  (float)-positionMP.y());
             totalPoints++;
+            totalDistance += nDistance;
+
+            if (i == mvpKeyFrames.size() - 1) {
+                lastKFTotalPoints++;
+                lastKFTotalDistance += nDistance;
+            }
         }
 
-        point3d p (positionKF.x(), positionKF.y(), positionKF.z());
-        pOT->insertPointCloud(pPointcloud, p);
+        point3d p (positionKF.z(), -positionKF.x(), -positionKF.y());
+        pOT->insertPointCloud(pPointcloud, p, -1, true, false);
+        //pOT->updateNode(p, true);
     }
+    pOT->updateInnerOccupancy();
+
+    double lastKFAvgDistance = lastKFTotalDistance / lastKFTotalPoints;
+    cout << "lastKFAvgDistance " << lastKFAvgDistance << endl;
 
     nTotalPoints = totalPoints;
+    nAverageDistance = totalDistance / totalPoints;
     nTotalKeyFrames = mvpKeyFrames.size();
 };
 
