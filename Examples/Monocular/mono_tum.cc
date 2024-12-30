@@ -42,12 +42,17 @@ int main(int argc, char **argv)
     vector<string> vstrImageFilenames;
     vector<double> vTimestamps;
     string strFile = string(argv[3])+"/rgb.txt";
+
+    cout << "Loading images ... ";
     LoadImages(strFile, vstrImageFilenames, vTimestamps);
+    cout << "OK" << endl;
 
     int nImages = vstrImageFilenames.size();
 
+    cout << "Initing SLAM ... ";
     // Create SLAM system. It initializes all system threads and gets ready to process frames.
     ORB_SLAM3::System SLAM(argv[1],argv[2],ORB_SLAM3::System::MONOCULAR,true);
+    cout << "OK" << endl;
     float imageScale = SLAM.GetImageScale();
 
     // Vector for tracking time statistics
@@ -60,6 +65,8 @@ int main(int argc, char **argv)
 
     double t_resize = 0.f;
     double t_track = 0.f;
+
+    cout << "Starting Main Loop" << endl;
 
     // Main loop
     cv::Mat im;

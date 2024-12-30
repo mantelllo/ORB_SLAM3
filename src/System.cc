@@ -236,6 +236,9 @@ System::System(const string &strVocFile, const string &strSettingsFile, const eS
         mpViewer->both = mpFrameDrawer->both;
     }
 
+    mpOccupancyThread = new OccupancyThread(mpAtlas);
+    mptOccupancyThread = new thread(&ORB_SLAM3::OccupancyThread::Run, mpOccupancyThread);
+
     // Fix verbosity
     Verbose::SetTh(Verbose::VERBOSITY_QUIET);
 
