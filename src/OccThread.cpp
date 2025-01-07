@@ -12,18 +12,18 @@ void OccupancyThread::Run() {
     cout << "OccupancyThread::Run()" << endl;
 
     while (1) {
-        cout << endl << "-- New Loop --" << endl;
+        // cout << endl << "-- New Loop --" << endl;
         pAtlas->GenerateNewOccupancyGrid();
 
         //Print
         auto mvpOccupancyGrids = pAtlas->GetOccupancyGrids();
-        OccGrid *lastOG = mvpOccupancyGrids[mvpOccupancyGrids.size()-1];
-        cout << "  H = " << lastOG->Entropy();
+        const auto& lastOG = mvpOccupancyGrids[mvpOccupancyGrids.size()-1];
+        // cout << "  H = " << lastOG->Entropy();
         if (mvpOccupancyGrids.size() > 1) {
-            OccGrid* prelastOG = mvpOccupancyGrids[mvpOccupancyGrids.size()-2];
-            cout << " IG = " << lastOG->InformationGainOver(prelastOG);
+            auto prelastOG = mvpOccupancyGrids[mvpOccupancyGrids.size()-2];
+            // cout << " IG = " << lastOG->InformationGainOver(prelastOG);
         }
-        cout << endl;
+        // cout << endl;
 
         lastOG->SaveToFile("OCTREE.bt");
 
