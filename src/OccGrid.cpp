@@ -15,8 +15,8 @@ OccGrid::OccGrid(Atlas* pAtlas, float resolution) {
     std::vector<KeyFrame*> mvpKeyFrames = pAtlas->GetAllKeyFrames();
     Pointcloud pPointcloud;
 
-    const int N_MAPPOINT_OBS_MIN = 5;
-    const int N_MAPPOINT_MAX_DST = 8;
+    const int N_MAPPOINT_OBS_MIN = 7;
+    const int N_MAPPOINT_MAX_DST = 10;
 
     int totalPoints = 0, lastKFTotalPoints = 0;
     double totalDistance = 0, lastKFTotalDistance = 0;
@@ -65,7 +65,7 @@ OccGrid::OccGrid(Atlas* pAtlas, float resolution) {
     pOT->updateInnerOccupancy();
 
     double lastKFAvgDistance = lastKFTotalDistance / lastKFTotalPoints;
-    cout << "lastKFAvgDistance " << lastKFAvgDistance << endl;
+    // cout << "lastKFAvgDistance " << lastKFAvgDistance << endl;
 
     nTotalPoints = totalPoints;
     nAverageDistance = totalDistance / totalPoints;
@@ -103,6 +103,15 @@ void OccGrid::SaveToFile(std::string filename) {
     bool bOK = pOT->writeBinaryConst(filename);
     if (!bOK) {
         cout << "Storing of Poincloud to disk failed!!" << endl;
+    }
+}
+
+void OccGrid::getNodes(std::vector<std::vector<float>>& nodeOccupation) {
+    octomap::OcTree::leaf_iterator it = pOT->begin_leafs(), end = pOT->end_leafs();
+    for (; it != end; ++it) {
+        if (it->getOccupancy() > 0.5) {
+            nodeOccupation.push_back({it.getX(), it.getY(), it.getZ()});
+        }
     }
 }
 

@@ -108,7 +108,7 @@ public:
     // Method for get data in current map
     std::vector<KeyFrame*> GetAllKeyFrames();
     std::vector<MapPoint*> GetAllMapPoints();
-    std::vector<OccGrid*> GetOccupancyGrids();
+    std::vector<std::shared_ptr<OccGrid>> GetOccupancyGrids();
     std::vector<MapPoint*> GetReferenceMapPoints();
     vector<Map*> GetAllMaps();
 
@@ -155,7 +155,7 @@ protected:
 
     Map* mpCurrentMap;
 
-    std::vector<OccGrid*> mvpOccupancyGrids;
+    std::vector<std::shared_ptr<OccGrid>> mvpOccupancyGrids;
 
     std::vector<GeometricCamera*> mvpCameras;
 

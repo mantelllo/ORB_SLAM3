@@ -417,21 +417,20 @@ void Atlas::GenerateNewOccupancyGrid() {
     using std::chrono::duration;
 
     auto t1 = high_resolution_clock::now();
-    auto* pOG = new OccGrid(this, 0.05f);
+    auto pOG = std::make_shared<OccGrid>(this, 0.05f);
     auto t2 = high_resolution_clock::now();
     auto ms_int = duration_cast<milliseconds>(t2 - t1);
 
     mvpOccupancyGrids.push_back(pOG);
-
-    std::cout << "New OcTree! |"
-    << " idx=" << mvpOccupancyGrids.size()-1
-    << " p=" << pOG->nTotalPoints
-    << " KF=" << pOG->nTotalKeyFrames
-    << " avgDist=" << pOG->nAverageDistance
-    << " ms=" <<  ms_int.count() << endl;
+    // std::cout << "New OcTree! |"
+    // << " idx=" << mvpOccupancyGrids.size()-1
+    // << " p=" << pOG->nTotalPoints
+    // << " KF=" << pOG->nTotalKeyFrames
+    // << " avgDist=" << pOG->nAverageDistance
+    // << " ms=" <<  ms_int.count() << endl;
 }
 
-std::vector<OccGrid*> Atlas::GetOccupancyGrids() {
+std::vector<std::shared_ptr<OccGrid>> Atlas::GetOccupancyGrids() {
     return mvpOccupancyGrids;
 }
 
