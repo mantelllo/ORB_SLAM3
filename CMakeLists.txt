@@ -128,7 +128,9 @@ include/GeometricTools.h
 include/TwoViewReconstruction.h
 include/SerializationUtils.h
 include/Config.h
-include/Settings.h)
+include/Settings.h
+        src/FrontierDetector.cpp
+        include/FrontierDetector.h)
 
 add_subdirectory(Thirdparty/g2o)
 
@@ -428,3 +430,10 @@ if(realsense2_FOUND)
             Examples_old/Stereo-Inertial/stereo_inertial_realsense_D435i.cc)
     target_link_libraries(stereo_inertial_realsense_D435i_old ${PROJECT_NAME})
 endif()
+
+set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${PROJECT_SOURCE_DIR}/Examples/Occupancy)
+add_executable(test_frontier_detector Examples/Occupancy/test_frontier_detector.cpp)
+target_link_libraries(test_frontier_detector ${PROJECT_NAME})
+
+add_executable(detect_frontiers Examples/Occupancy/detect_frontiers.cpp)
+target_link_libraries(detect_frontiers ${PROJECT_NAME})

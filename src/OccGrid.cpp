@@ -4,6 +4,8 @@
 
 #include "OccGrid.h"
 
+#include <utility>
+
 namespace ORB_SLAM3
 {
 
@@ -70,6 +72,16 @@ OccGrid::OccGrid(Atlas* pAtlas, float resolution) {
     nTotalPoints = totalPoints;
     nAverageDistance = totalDistance / totalPoints;
     nTotalKeyFrames = mvpKeyFrames.size();
+}
+
+
+OccGrid::OccGrid(OcTree *pOT) {
+    this->pOT = pOT;
+}
+
+OccGrid::OccGrid(string treePath) {
+    auto pOT = new OcTree(std::move(treePath));
+    this->pOT = pOT;
 };
 
 
@@ -92,29 +104,32 @@ double OccGrid::Entropy() const {
 }
 
 
-double OccGrid::InformationGainOver(OccGrid* otherOG) const {
+double OccGrid::InformationGainOver(const OccGrid* otherOG) const {
     double e1 = Entropy();
     double e2 = otherOG->Entropy();
     return e1 - e2;
 }
 
 
-void OccGrid::SaveToFile(std::string filename) {
+void OccGrid::SaveToFile(const std::string& filename) {
     bool bOK = pOT->writeBinaryConst(filename);
     if (!bOK) {
         cout << "Storing of Poincloud to disk failed!!" << endl;
     }
 }
 
-void OccGrid::getNodes(std::vector<std::vector<float>>& nodeOccupation) {
+
+void OccGrid::GetNodes(std::vector<std::vector<float>>& nodeOccupation) const {
     octomap::OcTree::leaf_iterator it = pOT->begin_leafs(), end = pOT->end_leafs();
     for (; it != end; ++it) {
         if (it->getOccupancy() > 0.5) {
-            nodeOccupation.push_back({it.getX(), it.getY(), it.getZ()});
+            nodeOccupation.push_back({(float)it.getX(), (float)it.getY(), (float)it.getZ()});
         }
     }
 }
 
 
-
+const OcTree * OccGrid::GetOcTree() const {
+    return this->pOT;
+}
 } // namespace ORB_SLAM3

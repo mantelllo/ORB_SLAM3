@@ -7,6 +7,8 @@
 #include <opencv2/opencv.hpp>
 #include <Thirdparty/Sophus/sophus/se3.hpp>  // Include Sophus for SE(3) support
 
+#include "FrontierDetector.h"
+
 namespace py = pybind11;
 
 
@@ -127,4 +129,7 @@ PYBIND11_MODULE(orbslam3, m) {
         .def("SaveToFile", &ORB_SLAM3::OccGrid::SaveToFile, py::arg("filename"))
         .def("Entropy", &ORB_SLAM3::OccGrid::Entropy)
         .def("InformationGainOver", &ORB_SLAM3::OccGrid::InformationGainOver, py::arg("otherGC"));
+
+    // py::class_<ORB_SLAM3::FrontierDetector, std::shared_ptr<ORB_SLAM3::FrontierDetector>>(m, "FrontierDetector")
+    //     .def("DetectFrontiers", &ORB_SLAM3::FrontierDetector::DetectFrontiers, py::arg("...BBZ !!!!!!!!!!!!!!!!!!!!!!"))
 }

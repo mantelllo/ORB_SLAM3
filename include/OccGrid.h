@@ -20,17 +20,21 @@ class OccGrid
 {
     public:
         OccGrid(Atlas *pAtlas, float resolution);
-        void SaveToFile(std::string filename);
+        explicit OccGrid(OcTree *pOT);
+        explicit OccGrid(string treePath);
+        void SaveToFile(const std::string& filename);
         double Entropy() const;
-        double InformationGainOver(OccGrid* otherOG) const;
+        double InformationGainOver(const OccGrid* otherOG) const;
+        void GetNodes(std::vector<std::vector<float>>& nodeOccupation) const;
+        const OcTree* GetOcTree() const;
 
-        unsigned int nTotalPoints;
-        unsigned int nTotalKeyFrames;
-        double nAverageDistance;
+        unsigned int nTotalPoints{};
+        unsigned int nTotalKeyFrames{};
+        double nAverageDistance{};
 
     protected:
         OcTree* pOT;
-        std::time_t ts;
+        std::time_t ts{};
 
 };
 
