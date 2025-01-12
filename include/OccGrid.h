@@ -25,6 +25,8 @@ class OccGrid
         void SaveToFile(const std::string& filename);
         double Entropy() const;
         double InformationGainOver(const OccGrid* otherOG) const;
+        shared_ptr<vector<point3d>> GetPointCloud() const;
+
         void GetNodes(std::vector<std::vector<float>>& nodeOccupation) const;
         const OcTree* GetOcTree() const;
 

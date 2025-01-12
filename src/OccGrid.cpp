@@ -110,6 +110,21 @@ double OccGrid::InformationGainOver(const OccGrid* otherOG) const {
     return e1 - e2;
 }
 
+shared_ptr<vector<point3d>> OccGrid::GetPointCloud() const {
+    auto vPoints = make_shared<vector<point3d>>();
+
+    for (auto it=pOT->begin_leafs(), end=pOT->end_leafs();
+            it != end; ++it) {
+        point3d p;
+        if (it->getOccupancy() > 0.5) {
+            p = it.getCoordinate();
+            vPoints->push_back(p);
+        };
+    }
+
+    return vPoints;
+}
+
 
 void OccGrid::SaveToFile(const std::string& filename) {
     bool bOK = pOT->writeBinaryConst(filename);

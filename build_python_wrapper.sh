@@ -19,5 +19,6 @@ cmake .. \
 make -j24 orbslam3_python
 cd ..
 
-cp lib/libORB_SLAM3.so ~/projects/research/orbslam3_wrapper/lib/libORB_SLAM3.so
-cp lib/orbslam3_python.so ~/projects/research/orbslam3_wrapper/lib/orbslam3.so
+PHD_LIB_DIR=/home/john/projects/research/research/slam/orbslam3/lib
+cd lib
+cp libORB_SLAM3.so orbslam3_python.so ${PHD_LIB_DIR}

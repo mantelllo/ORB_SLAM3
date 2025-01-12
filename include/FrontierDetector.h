@@ -11,10 +11,10 @@
 #include "OccGrid.h"
 
 namespace ORB_SLAM3 {
-    struct Frontier {
+    typedef struct Frontier {
         std::vector<octomap::point3d> points;
         octomap::point3d center;
-    };
+    } Frontier;
 
     struct OcTreeKeyComparator {
         bool operator()(const octomap::OcTreeKey& lhs, const octomap::OcTreeKey& rhs) const {
@@ -30,7 +30,7 @@ namespace ORB_SLAM3 {
 
     class FrontierDetector {
     public:
-        static std::vector<std::shared_ptr<Frontier>>* DetectFrontiers(const OccGrid* pOG);
+        static std::vector<std::shared_ptr<Frontier>>* DetectFrontiers(const shared_ptr<OccGrid>& pOG);
 
     private:
         static bool isFrontier(const OcTree* tree, const octomap::OcTreeKey* key);

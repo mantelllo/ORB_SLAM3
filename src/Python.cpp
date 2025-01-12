@@ -5,6 +5,7 @@
 #include <Eigen/Dense>
 #include <System.h>
 #include <opencv2/opencv.hpp>
+#include <pybind11/stl_bind.h>
 #include <Thirdparty/Sophus/sophus/se3.hpp>  // Include Sophus for SE(3) support
 
 #include "FrontierDetector.h"
@@ -30,7 +31,7 @@ cv::Mat numpy_to_cv_float(const py::array_t<float_t>& input) {
 py::array_t<float> EigenMatrixToArray(Eigen::Matrix4f pose){
     return py::array_t<float>(
         {4, 4},                    // shape
-        {4 * sizeof(float), sizeof(float)},  // strides
+        {sizeof(float), sizeof(float) * 4},  // strides
         pose.data()                // data pointer
     );
 }
@@ -59,7 +60,30 @@ cv::Mat NumpyImageToMat(const py::array_t<uint8_t>& image) {
 }
 
 
-PYBIND11_MODULE(orbslam3, m) {
+PYBIND11_MODULE(orbslam3_python, m) {
+    py::class_<ORB_SLAM3::Frontier, std::shared_ptr<ORB_SLAM3::Frontier>>(m, "Frontier")
+        .def_readonly("points", &ORB_SLAM3::Frontier::points)
+        .def("point_count", [](ORB_SLAM3::Frontier& self) { return self.points.size(); })
+        .def_readonly("center", &ORB_SLAM3::Frontier::center)
+        .def("__repr__", [](const ORB_SLAM3::Frontier &f) {
+            return "<Frontier point_count=" + std::to_string(f.points.size()) +
+                   ", center=(" + std::to_string(f.center.x()) +
+                   ", " + std::to_string(f.center.y()) +
+                   ", " + std::to_string(f.center.z()) + ")>";
+        });
+
+    py::class_<octomath::Vector3>(m, "Vector3")
+        .def(py::init<float, float, float>(), py::arg("x") = 0, py::arg("y") = 0, py::arg("z") = 0)
+        .def("x", [](const octomath::Vector3 &v) { return v.x(); })  // Explicitly call the correct x()
+        .def("y", [](const octomath::Vector3 &v) { return v.y(); })  // Explicitly call the correct y()
+        .def("z", [](const octomath::Vector3 &v) { return v.z(); })  // Explicitly call the correct z()
+        .def("__repr__", [](const octomath::Vector3 &v) {
+            return "<Vector3 x=" + std::to_string(v.x()) +
+                   ", y=" + std::to_string(v.y()) +
+                   ", z=" + std::to_string(v.z()) + ">";
+        });
+
+
     py::enum_<ORB_SLAM3::System::eSensor>(m, "eSensor")
         .value("MONOCULAR", ORB_SLAM3::System::MONOCULAR)
         .value("STEREO", ORB_SLAM3::System::STEREO)
@@ -70,31 +94,39 @@ PYBIND11_MODULE(orbslam3, m) {
         .def(py::init<const std::string &, const std::string &, ORB_SLAM3::System::eSensor, const bool &>(),
              py::arg("voc_file"), py::arg("settings_file"), py::arg("sensor_type"), py::arg("use_viewer") = true)
         .def("TrackMonocular",
-            [](ORB_SLAM3::System &self, const py::array_t<uint8_t> &image, double timestamp) {
+            [](ORB_SLAM3::System &self, const py::array_t<uint8_t> &image, double timestamp, bool inversePose) {
                 cv::Mat img = NumpyImageToMat(image);
 
                 Eigen::Matrix4f pose = self.TrackMonocular(img, timestamp).matrix();
+                if (inversePose) pose = pose.inverse();
+
                 return EigenMatrixToArray(pose);
             },
-            py::arg("image"), py::arg("timestamp"))
+            py::arg("image"), py::arg("timestamp"), py::arg("inverse_pose"))
         .def("TrackStereo",
-            [](ORB_SLAM3::System &self, const py::array_t<uint8_t> &image1, const py::array_t<uint8_t> &image2, double timestamp) {
+            [](ORB_SLAM3::System &self, const py::array_t<uint8_t> &image1, const py::array_t<uint8_t> &image2, double timestamp,
+                 bool inversePose) {
                 cv::Mat img1 = NumpyImageToMat(image1);
                 cv::Mat img2 = NumpyImageToMat(image2);
 
                 Eigen::Matrix4f pose = self.TrackStereo(img1, img2, timestamp).matrix();
+                if (inversePose) pose = pose.inverse();
+
                 return EigenMatrixToArray(pose);
             },
-            py::arg("front_left"), py::arg("front_right"), py::arg("timestamp"))
+            py::arg("front_left"), py::arg("front_right"), py::arg("timestamp"), py::arg("inverse_pose"))
         .def("TrackRGBD",
-            [](ORB_SLAM3::System &self, const py::array_t<uint8_t> &image, const py::array_t<uint8_t> &depth, double timestamp) {
+            [](ORB_SLAM3::System &self, const py::array_t<uint8_t> &image, const py::array_t<uint8_t> &depth, double timestamp,
+                bool inversePose) {
                 cv::Mat img = NumpyImageToMat(image);
                 cv::Mat dep = numpy_to_cv_float(depth);
 
                 Eigen::Matrix4f pose = self.TrackRGBD(img, dep, timestamp).matrix();
+                if (inversePose) pose = pose.inverse();
+
                 return EigenMatrixToArray(pose);
             },
-            py::arg("image"), py::arg("depth"), py::arg("timestamp"))
+            py::arg("image"), py::arg("depth"), py::arg("timestamp"), py::arg("inverse_pose"))
         .def("Shutdown", &ORB_SLAM3::System::Shutdown)
         .def("GetAllMapPoints",
             [](ORB_SLAM3::System &self) {
@@ -128,8 +160,15 @@ PYBIND11_MODULE(orbslam3, m) {
     py::class_<ORB_SLAM3::OccGrid, std::shared_ptr<ORB_SLAM3::OccGrid>>(m, "OccupancyGrid")
         .def("SaveToFile", &ORB_SLAM3::OccGrid::SaveToFile, py::arg("filename"))
         .def("Entropy", &ORB_SLAM3::OccGrid::Entropy)
-        .def("InformationGainOver", &ORB_SLAM3::OccGrid::InformationGainOver, py::arg("otherGC"));
+        .def("InformationGainOver", &ORB_SLAM3::OccGrid::InformationGainOver, py::arg("otherGC"))
+        .def("PointCloud", [](ORB_SLAM3::OccGrid &self) {
+            vector<point3d> pcd = *self.GetPointCloud();
+            return pcd;
+        });
 
-    // py::class_<ORB_SLAM3::FrontierDetector, std::shared_ptr<ORB_SLAM3::FrontierDetector>>(m, "FrontierDetector")
-    //     .def("DetectFrontiers", &ORB_SLAM3::FrontierDetector::DetectFrontiers, py::arg("...BBZ !!!!!!!!!!!!!!!!!!!!!!"))
+    m.def("DetectFrontiers",
+          [](const std::shared_ptr<ORB_SLAM3::OccGrid>& pOG) {
+              vector<shared_ptr<ORB_SLAM3::Frontier>>* frontiers = ORB_SLAM3::FrontierDetector::DetectFrontiers(pOG);
+              return frontiers;
+          });
 }

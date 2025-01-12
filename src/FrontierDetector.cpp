@@ -9,7 +9,7 @@
 
 
 namespace ORB_SLAM3 {
-    std::vector<std::shared_ptr<Frontier>>* FrontierDetector::DetectFrontiers(const OccGrid* pOG) {
+    std::vector<std::shared_ptr<Frontier>>* FrontierDetector::DetectFrontiers(const shared_ptr<OccGrid>& pOG) {
         auto *frontiers = new std::vector<std::shared_ptr<Frontier>>();
         const OcTree *tree = pOG->GetOcTree();
 
