@@ -19,7 +19,7 @@ namespace ORB_SLAM3
 class OccGrid
 {
     public:
-        OccGrid(Atlas *pAtlas, float resolution);
+        OccGrid(Atlas *pAtlas, float resolution, int n_mappoint_obs_min = 7, int n_mappoint_max_dst = 10);
         explicit OccGrid(OcTree *pOT);
         explicit OccGrid(string treePath);
         void SaveToFile(const std::string& filename);

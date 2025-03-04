@@ -151,19 +151,72 @@ PYBIND11_MODULE(orbslam3_python, m) {
                 return self.mpAtlas->GetOccupancyGrids();
             })
         .def("GenerateNewOccupancyGrid",
-            [](ORB_SLAM3::System &self) -> std::shared_ptr<ORB_SLAM3::OccGrid> {
-                self.mpAtlas->GenerateNewOccupancyGrid();
+            [](ORB_SLAM3::System &self, const int n_mappoint_obs_min, const int n_mappoint_max_dst) -> std::shared_ptr<ORB_SLAM3::OccGrid> {
+                Py_BEGIN_ALLOW_THREADS
+                self.mpAtlas->GenerateNewOccupancyGrid(n_mappoint_obs_min, n_mappoint_max_dst);
+                Py_END_ALLOW_THREADS
+
                 auto grids = self.mpAtlas->GetOccupancyGrids();
                 return grids[grids.size() - 1];
+            }, py::arg("n_mappoint_obs_min"), py::arg("n_mappoint_max_dst"))
+        .def("GetMapID",
+            [](ORB_SLAM3::System &self) {
+                return self.mpAtlas->GetCurrentMap()->GetId();
             });
 
     py::class_<ORB_SLAM3::OccGrid, std::shared_ptr<ORB_SLAM3::OccGrid>>(m, "OccupancyGrid")
-        .def("SaveToFile", &ORB_SLAM3::OccGrid::SaveToFile, py::arg("filename"))
-        .def("Entropy", &ORB_SLAM3::OccGrid::Entropy)
-        .def("InformationGainOver", &ORB_SLAM3::OccGrid::InformationGainOver, py::arg("otherGC"))
+        .def("SaveToFile", &ORB_SLAM3::OccGrid::SaveToFile, py::arg("filename"), py::call_guard<py::gil_scoped_release>())
+        .def("Entropy", &ORB_SLAM3::OccGrid::Entropy, py::call_guard<py::gil_scoped_release>())
+        .def("InformationGainOver", &ORB_SLAM3::OccGrid::InformationGainOver, py::arg("otherGC"), py::call_guard<py::gil_scoped_release>())
         .def("PointCloud", [](ORB_SLAM3::OccGrid &self) {
             vector<point3d> pcd = *self.GetPointCloud();
-            return pcd;
+            // Specify the shape of the NumPy array
+            // Number of points in the point cloud
+            pybind11::ssize_t num_points = static_cast<pybind11::ssize_t>(pcd.size());
+
+            // Create a NumPy array with the desired shape (num_points, 3)
+            pybind11::array_t<float> numpy_array(pybind11::array::ShapeContainer({num_points, 3}));
+
+            // Access the raw buffer of the NumPy array for modification
+            auto buf = numpy_array.mutable_unchecked<2>();
+            for (pybind11::ssize_t i = 0; i < num_points; ++i) {
+                buf(i, 0) = pcd[i].x();
+                buf(i, 1) = pcd[i].y();
+                buf(i, 2) = pcd[i].z();
+            }
+
+            return numpy_array;
+        })
+        .def("PointCloudWithProba", [](ORB_SLAM3::OccGrid &self) {
+            const octomap::OcTree *octree = self.GetOcTree();  // Assuming a function to get the OctoMap instance
+            if (!octree) {
+                throw std::runtime_error("OctoMap is not initialized!");
+            }
+
+            std::vector<std::pair<octomap::point3d, float>> pcd_with_proba;
+
+            for (octomap::OcTree::leaf_iterator it = octree->begin(), end = octree->end(); it != end; ++it) {
+                octomap::point3d point = it.getCoordinate();
+                float probability = it->getOccupancy();  // Extract occupancy probability
+                pcd_with_proba.emplace_back(point, probability);
+            }
+
+            pybind11::ssize_t num_points = static_cast<pybind11::ssize_t>(pcd_with_proba.size());
+
+            // Create a NumPy array with shape (num_points, 4)
+            pybind11::array_t<float> numpy_array(pybind11::array::ShapeContainer({num_points, 4}));
+
+            // Access raw buffer
+            auto buf = numpy_array.mutable_unchecked<2>();
+
+            for (pybind11::ssize_t i = 0; i < num_points; ++i) {
+                buf(i, 0) = pcd_with_proba[i].first.x();
+                buf(i, 1) = pcd_with_proba[i].first.y();
+                buf(i, 2) = pcd_with_proba[i].first.z();
+                buf(i, 3) = pcd_with_proba[i].second;  // Probability
+            }
+
+            return numpy_array;
         });
 
     m.def("DetectFrontiers",

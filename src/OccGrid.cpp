@@ -10,15 +10,12 @@ namespace ORB_SLAM3
 {
 
 
-OccGrid::OccGrid(Atlas* pAtlas, float resolution) {
+OccGrid::OccGrid(Atlas* pAtlas, float resolution, const int n_mappoint_obs_min, const int n_mappoint_max_dst) {
     ts = std::time(nullptr);
     pOT = new OcTree(resolution);
 
     std::vector<KeyFrame*> mvpKeyFrames = pAtlas->GetAllKeyFrames();
     Pointcloud pPointcloud;
-
-    const int N_MAPPOINT_OBS_MIN = 7;
-    const int N_MAPPOINT_MAX_DST = 10;
 
     int totalPoints = 0, lastKFTotalPoints = 0;
     double totalDistance = 0, lastKFTotalDistance = 0;
@@ -42,8 +39,8 @@ OccGrid::OccGrid(Atlas* pAtlas, float resolution) {
                 pow(positionKF.z() - positionMP.z(), 2)
             );
             if (pMP->isBad()
-                || pMP->Observations() < N_MAPPOINT_OBS_MIN
-                || nDistance > N_MAPPOINT_MAX_DST
+                || pMP->Observations() < n_mappoint_obs_min
+                || nDistance > n_mappoint_max_dst
                 )
                 continue;
 

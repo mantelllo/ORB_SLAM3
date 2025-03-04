@@ -112,7 +112,7 @@ public:
     std::vector<MapPoint*> GetReferenceMapPoints();
     vector<Map*> GetAllMaps();
 
-    void GenerateNewOccupancyGrid();
+    void GenerateNewOccupancyGrid(int n_mappoint_obs_min = 7, int n_mappoint_max_dst = 10);
 
     int CountMaps();
 
