@@ -10,7 +10,8 @@ namespace ORB_SLAM3
 {
 
 
-OccGrid::OccGrid(Atlas* pAtlas, float resolution, const int n_mappoint_obs_min, const int n_mappoint_max_dst) {
+OccGrid::OccGrid(Atlas* pAtlas, float resolution, const int n_mappoint_obs_min,
+                 const int n_mappoint_max_dst) {
     ts = std::time(nullptr);
     pOT = new OcTree(resolution);
 
@@ -45,9 +46,8 @@ OccGrid::OccGrid(Atlas* pAtlas, float resolution, const int n_mappoint_obs_min, 
                 continue;
 
 
-            pPointcloud.push_back((float)positionMP.z(),
-                                  (float)-positionMP.x(),
-                                  (float)-positionMP.y());
+            Eigen::Vector3f pMPNed = Converter::cvPinholeToNED(positionMP);
+            pPointcloud.push_back((float)pMPNed.x(), (float)pMPNed.y(), (float)pMPNed.z());
             totalPoints++;
             totalDistance += nDistance;
 
@@ -57,11 +57,25 @@ OccGrid::OccGrid(Atlas* pAtlas, float resolution, const int n_mappoint_obs_min, 
             }
         }
 
-        point3d p (positionKF.z(), -positionKF.x(), -positionKF.y());
+        Eigen::Vector3f pKFNED = Converter::cvPinholeToNED(positionKF);
+        point3d p (pKFNED.x(), pKFNED.y(), pKFNED.z());
         pOT->insertPointCloud(pPointcloud, p, -1, true, false);
         //pOT->updateNode(p, true);
     }
     pOT->updateInnerOccupancy();
+
+    // add reference map points
+    Map* pActiveMap = pAtlas->GetCurrentMap();
+    const vector<MapPoint*> &vpRefMPs = pActiveMap->GetReferenceMapPoints();
+    for(auto vpMP : vpRefMPs)
+    {
+        if(vpMP->isBad() || vpMP->nObs < n_mappoint_obs_min) continue;
+        Sophus::Vector3f point = vpMP->GetWorldPos();
+        Sophus::Vector3f pNED = Converter::cvPinholeToNED(point);
+        point3d p (pNED.x(), pNED.y(), pNED.z());
+        pOT->updateNode(p, true);
+    }
+
 
     double lastKFAvgDistance = lastKFTotalDistance / lastKFTotalPoints;
     // cout << "lastKFAvgDistance " << lastKFAvgDistance << endl;

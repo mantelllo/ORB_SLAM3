@@ -311,4 +311,42 @@ Sophus::Sim3f Converter::toSophus(const g2o::Sim3& S) {
                          S.translation().cast<float>());
 }
 
+Eigen::Vector3f Converter::cvPinholeToNED(const Eigen::Vector3f &vPinhole) {
+    Eigen::Vector3f vNed(vPinhole.z(), vPinhole.x(), -vPinhole.y());
+    return vNed;
+}
+
+Eigen::Vector4f Converter::cvPinholeToNED(const Eigen::Vector4f &vPinhole) {
+    Eigen::Vector4f vNed4f = vPinhole.head(4);
+    Eigen::Vector3f vNed3f = vPinhole.head(3);
+    vNed3f = cvPinholeToNED(vNed3f);
+    vNed4f.head(3) = vNed3f;
+    return vNed4f;
+}
+
+
+Eigen::Matrix4f Converter::cvPinholeToNED(const Eigen::Matrix4f &mPinhole) {
+    static const Eigen::Matrix3f M = (Eigen::Matrix3f() <<
+        0, 0, 1,
+        1, 0, 0,
+        0, 1, 0).finished();
+
+    Eigen::Matrix4f mNed = Eigen::Matrix4f::Identity();
+
+    // 1. Rotation conversion
+    Eigen::Matrix3f R_pinhole = mPinhole.block<3,3>(0,0);
+    Eigen::Matrix3f R_ned = M * R_pinhole * M.transpose();
+
+    // 2. Translation conversion (via your existing function)
+    Eigen::Vector3f t_pinhole = mPinhole.block<3,1>(0,3);
+    Eigen::Vector3f t_ned = cvPinholeToNED(t_pinhole);
+
+    // 3. Assemble
+    mNed.block<3,3>(0,0) = R_ned;
+    mNed.block<3,1>(0,3) = t_ned;
+
+    return mNed;
+}
+
+
 } //namespace ORB_SLAM
