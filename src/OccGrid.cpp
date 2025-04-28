@@ -46,7 +46,7 @@ OccGrid::OccGrid(Atlas* pAtlas, float resolution, const int n_mappoint_obs_min,
                 continue;
 
 
-            Eigen::Vector3f pMPNed = Converter::cvPinholeToNED(positionMP);
+            Eigen::Vector3f pMPNed = Converter::cvPinholeToNEU(positionMP);
             pPointcloud.push_back((float)pMPNed.x(), (float)pMPNed.y(), (float)pMPNed.z());
             totalPoints++;
             totalDistance += nDistance;
@@ -57,8 +57,8 @@ OccGrid::OccGrid(Atlas* pAtlas, float resolution, const int n_mappoint_obs_min,
             }
         }
 
-        Eigen::Vector3f pKFNED = Converter::cvPinholeToNED(positionKF);
-        point3d p (pKFNED.x(), pKFNED.y(), pKFNED.z());
+        Eigen::Vector3f pKFNEU = Converter::cvPinholeToNEU(positionKF);
+        point3d p (pKFNEU.x(), pKFNEU.y(), pKFNEU.z());
         pOT->insertPointCloud(pPointcloud, p, -1, true, false);
         //pOT->updateNode(p, true);
     }
@@ -71,8 +71,8 @@ OccGrid::OccGrid(Atlas* pAtlas, float resolution, const int n_mappoint_obs_min,
     {
         if(vpMP->isBad() || vpMP->nObs < n_mappoint_obs_min) continue;
         Sophus::Vector3f point = vpMP->GetWorldPos();
-        Sophus::Vector3f pNED = Converter::cvPinholeToNED(point);
-        point3d p (pNED.x(), pNED.y(), pNED.z());
+        Sophus::Vector3f pNEU = Converter::cvPinholeToNEU(point);
+        point3d p (pNEU.x(), pNEU.y(), pNEU.z());
         pOT->updateNode(p, true);
     }
 

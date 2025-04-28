@@ -94,44 +94,44 @@ PYBIND11_MODULE(orbslam3_python, m) {
         .def(py::init<const std::string &, const std::string &, ORB_SLAM3::System::eSensor, const bool &>(),
              py::arg("voc_file"), py::arg("settings_file"), py::arg("sensor_type"), py::arg("use_viewer") = true)
         .def("TrackMonocular",
-            [](ORB_SLAM3::System &self, const py::array_t<uint8_t> &image, double timestamp, bool inversePose, bool toNED) {
+            [](ORB_SLAM3::System &self, const py::array_t<uint8_t> &image, double timestamp, bool inversePose, bool toNEU) {
                 cv::Mat img = NumpyImageToMat(image);
 
                 Eigen::Matrix4f pose = self.TrackMonocular(img, timestamp).matrix();
                 if (inversePose) pose = pose.inverse();
-                if (toNED) pose = ORB_SLAM3::Converter::cvPinholeToNED(pose);
+                if (toNEU) pose = ORB_SLAM3::Converter::cvPinholeToNEU(pose);
 
                 return EigenMatrixToArray(pose);
             },
-            py::arg("image"), py::arg("timestamp"), py::arg("inverse_pose"), py::arg("to_ned"))
+            py::arg("image"), py::arg("timestamp"), py::arg("inverse_pose"), py::arg("to_neu"))
         .def("TrackStereo",
             [](ORB_SLAM3::System &self, const py::array_t<uint8_t> &image1, const py::array_t<uint8_t> &image2, double timestamp,
-                 bool inversePose, bool toNED) {
+                 bool inversePose, bool toNEU) {
                 cv::Mat img1 = NumpyImageToMat(image1);
                 cv::Mat img2 = NumpyImageToMat(image2);
 
                 Eigen::Matrix4f pose = self.TrackStereo(img1, img2, timestamp).matrix();
                 if (inversePose) pose = pose.inverse();
-                if (toNED) pose = ORB_SLAM3::Converter::cvPinholeToNED(pose);
+                if (toNEU) pose = ORB_SLAM3::Converter::cvPinholeToNEU(pose);
 
                 return EigenMatrixToArray(pose);
             },
             py::arg("front_left"), py::arg("front_right"), py::arg("timestamp"),
-            py::arg("inverse_pose"), py::arg("to_ned"))
+            py::arg("inverse_pose"), py::arg("to_neu"))
         .def("TrackRGBD",
             [](ORB_SLAM3::System &self, const py::array_t<uint8_t> &image, const py::array_t<uint8_t> &depth, double timestamp,
-                bool inversePose, bool toNED) {
+                bool inversePose, bool toNEU) {
                 cv::Mat img = NumpyImageToMat(image);
                 cv::Mat dep = numpy_to_cv_float(depth);
 
                 Eigen::Matrix4f pose = self.TrackRGBD(img, dep, timestamp).matrix();
                 if (inversePose) pose = pose.inverse();
-                if (toNED) pose = ORB_SLAM3::Converter::cvPinholeToNED(pose);
+                if (toNEU) pose = ORB_SLAM3::Converter::cvPinholeToNEU(pose);
 
                 return EigenMatrixToArray(pose);
             },
             py::arg("image"), py::arg("depth"), py::arg("timestamp"), py::arg("inverse_pose"),
-            py::arg("to_ned"))
+            py::arg("to_neu"))
         .def("Shutdown", &ORB_SLAM3::System::Shutdown)
         .def("GetAllMapPoints",
             [](ORB_SLAM3::System &self) {
@@ -200,8 +200,8 @@ PYBIND11_MODULE(orbslam3_python, m) {
                 // Compute distance
                 float distance = (position - point).norm();
                 if (distance <= radius) {
-                    Eigen::Vector3f pNed = ORB_SLAM3::Converter::cvPinholeToNED(point);
-                    selectedPoints.push_back(pNed);
+                    Eigen::Vector3f pNEU = ORB_SLAM3::Converter::cvPinholeToNEU(point);
+                    selectedPoints.push_back(pNEU);
                 }
             }
 
@@ -214,7 +214,6 @@ PYBIND11_MODULE(orbslam3_python, m) {
 
             // Fill NumPy array
             auto buf = numpy_array.mutable_unchecked<2>();
-            Sophus::Vector3f pNed;
             for (py::ssize_t i = 0; i < num_points; ++i) {
                 buf(i, 0) = selectedPoints[i].x();
                 buf(i, 1) = selectedPoints[i].y();
@@ -255,8 +254,8 @@ PYBIND11_MODULE(orbslam3_python, m) {
                     // Compute distance
                     float distance = (positionKF - positionMP).norm();
                     if (distance <= radius) {
-                        Eigen::Vector3f pNED = ORB_SLAM3::Converter::cvPinholeToNED(positionMP);
-                        closest_points.push_back(pNED);
+                        Eigen::Vector3f pNEU = ORB_SLAM3::Converter::cvPinholeToNEU(positionMP);
+                        closest_points.push_back(pNEU);
                     }
                 }
 
@@ -311,7 +310,7 @@ PYBIND11_MODULE(orbslam3_python, m) {
 
             std::vector<std::pair<octomap::point3d, float>> pcd_with_proba;
 
-            // octree already uses NED coordinate system
+            // octree already uses NEU coordinate system
             for (octomap::OcTree::leaf_iterator it = octree->begin(), end = octree->end(); it != end; ++it) {
                 octomap::point3d point = it.getCoordinate();
                 float probability = it->getOccupancy();  // Extract occupancy probability
@@ -342,16 +341,16 @@ PYBIND11_MODULE(orbslam3_python, m) {
               return frontiers;
           });
 
-    m.def("ConvertVector3f",
-        [](const Eigen::Vector3f& v) {
-            return ORB_SLAM3::Converter::cvPinholeToNED(v);
-        });
-    m.def("ConvertVector4f",
-        [](const Eigen::Vector4f& v) {
-            return ORB_SLAM3::Converter::cvPinholeToNED(v);
-        });
-    m.def("ConvertMatrix4f",
-        [](const Eigen::Matrix4f& v) {
-            return ORB_SLAM3::Converter::cvPinholeToNED(v);
-        });
+    // m.def("ConvertVector3f",
+    //     [](const Eigen::Vector3f& v) {
+    //         return ORB_SLAM3::Converter::cvPinholeToNEU(v);
+    //     });
+    // m.def("ConvertVector4f",
+    //     [](const Eigen::Vector4f& v) {
+    //         return ORB_SLAM3::Converter::cvPinholeToNEU(v);
+    //     });
+    // m.def("ConvertMatrix4f",
+    //     [](const Eigen::Matrix4f& v) {
+    //         return ORB_SLAM3::Converter::cvPinholeToNEU(v);
+    //     });
 }
