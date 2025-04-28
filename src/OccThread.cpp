@@ -9,11 +9,11 @@ namespace ORB_SLAM3 {
 
 
 void OccupancyThread::Run() {
-    cout << "OccupancyThread::Run()" << endl;
+    cout << "OccupancyThread STARTED" << endl;
 
     while (1) {
         // cout << endl << "-- New Loop --" << endl;
-        pAtlas->GenerateNewOccupancyGrid();
+        pAtlas->GenerateNewOccupancyGrid(octree_resolution);
 
         //Print
         auto mvpOccupancyGrids = pAtlas->GetOccupancyGrids();

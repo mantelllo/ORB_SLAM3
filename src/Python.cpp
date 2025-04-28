@@ -156,14 +156,15 @@ PYBIND11_MODULE(orbslam3_python, m) {
                 return self.mpAtlas->GetOccupancyGrids();
             })
         .def("GenerateNewOccupancyGrid",
-            [](ORB_SLAM3::System &self, const int n_mappoint_obs_min, const int n_mappoint_max_dst) -> std::shared_ptr<ORB_SLAM3::OccGrid> {
+            [](ORB_SLAM3::System &self, const float octree_resolution,
+                const int n_mappoint_obs_min, const int n_mappoint_max_dst) -> std::shared_ptr<ORB_SLAM3::OccGrid> {
                 Py_BEGIN_ALLOW_THREADS
-                self.mpAtlas->GenerateNewOccupancyGrid(n_mappoint_obs_min, n_mappoint_max_dst);
+                self.mpAtlas->GenerateNewOccupancyGrid(octree_resolution, n_mappoint_obs_min, n_mappoint_max_dst);
                 Py_END_ALLOW_THREADS
 
                 auto grids = self.mpAtlas->GetOccupancyGrids();
                 return grids[grids.size() - 1];
-            }, py::arg("n_mappoint_obs_min"), py::arg("n_mappoint_max_dst"))
+            }, py::arg("octree_resolution"), py::arg("n_mappoint_obs_min"), py::arg("n_mappoint_max_dst"))
         .def("GetMapID",
             [](ORB_SLAM3::System &self) {
                 return self.mpAtlas->GetCurrentMap()->GetId();
