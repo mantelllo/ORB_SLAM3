@@ -4,19 +4,19 @@
 
 #include "OccGrid.h"
 
+#include <utility>
+
 namespace ORB_SLAM3
 {
 
 
-OccGrid::OccGrid(Atlas* pAtlas, float resolution) {
+OccGrid::OccGrid(Atlas* pAtlas, float resolution, const int n_mappoint_obs_min,
+                 const int n_mappoint_max_dst) {
     ts = std::time(nullptr);
     pOT = new OcTree(resolution);
 
     std::vector<KeyFrame*> mvpKeyFrames = pAtlas->GetAllKeyFrames();
     Pointcloud pPointcloud;
-
-    const int N_MAPPOINT_OBS_MIN = 7;
-    const int N_MAPPOINT_MAX_DST = 10;
 
     int totalPoints = 0, lastKFTotalPoints = 0;
     double totalDistance = 0, lastKFTotalDistance = 0;
@@ -40,15 +40,14 @@ OccGrid::OccGrid(Atlas* pAtlas, float resolution) {
                 pow(positionKF.z() - positionMP.z(), 2)
             );
             if (pMP->isBad()
-                || pMP->Observations() < N_MAPPOINT_OBS_MIN
-                || nDistance > N_MAPPOINT_MAX_DST
+                || pMP->Observations() < n_mappoint_obs_min
+                || nDistance > n_mappoint_max_dst
                 )
                 continue;
 
 
-            pPointcloud.push_back((float)positionMP.z(),
-                                  (float)-positionMP.x(),
-                                  (float)-positionMP.y());
+            Eigen::Vector3f pMPNed = Converter::cvPinholeToNEU(positionMP);
+            pPointcloud.push_back((float)pMPNed.x(), (float)pMPNed.y(), (float)pMPNed.z());
             totalPoints++;
             totalDistance += nDistance;
 
@@ -58,11 +57,25 @@ OccGrid::OccGrid(Atlas* pAtlas, float resolution) {
             }
         }
 
-        point3d p (positionKF.z(), -positionKF.x(), -positionKF.y());
+        Eigen::Vector3f pKFNEU = Converter::cvPinholeToNEU(positionKF);
+        point3d p (pKFNEU.x(), pKFNEU.y(), pKFNEU.z());
         pOT->insertPointCloud(pPointcloud, p, -1, true, false);
         //pOT->updateNode(p, true);
     }
     pOT->updateInnerOccupancy();
+
+    // add reference map points
+    Map* pActiveMap = pAtlas->GetCurrentMap();
+    const vector<MapPoint*> &vpRefMPs = pActiveMap->GetReferenceMapPoints();
+    for(auto vpMP : vpRefMPs)
+    {
+        if(vpMP->isBad() || vpMP->nObs < n_mappoint_obs_min) continue;
+        Sophus::Vector3f point = vpMP->GetWorldPos();
+        Sophus::Vector3f pNEU = Converter::cvPinholeToNEU(point);
+        point3d p (pNEU.x(), pNEU.y(), pNEU.z());
+        pOT->updateNode(p, true);
+    }
+
 
     double lastKFAvgDistance = lastKFTotalDistance / lastKFTotalPoints;
     // cout << "lastKFAvgDistance " << lastKFAvgDistance << endl;
@@ -70,6 +83,16 @@ OccGrid::OccGrid(Atlas* pAtlas, float resolution) {
     nTotalPoints = totalPoints;
     nAverageDistance = totalDistance / totalPoints;
     nTotalKeyFrames = mvpKeyFrames.size();
+}
+
+
+OccGrid::OccGrid(OcTree *pOT) {
+    this->pOT = pOT;
+}
+
+OccGrid::OccGrid(string treePath) {
+    auto pOT = new OcTree(std::move(treePath));
+    this->pOT = pOT;
 };
 
 
@@ -92,29 +115,47 @@ double OccGrid::Entropy() const {
 }
 
 
-double OccGrid::InformationGainOver(OccGrid* otherOG) const {
+double OccGrid::InformationGainOver(const OccGrid* otherOG) const {
     double e1 = Entropy();
     double e2 = otherOG->Entropy();
     return e1 - e2;
 }
 
+shared_ptr<vector<point3d>> OccGrid::GetPointCloud() const {
+    auto vPoints = make_shared<vector<point3d>>();
 
-void OccGrid::SaveToFile(std::string filename) {
+    for (auto it=pOT->begin_leafs(), end=pOT->end_leafs();
+            it != end; ++it) {
+        point3d p;
+        if (it->getOccupancy() > 0.5) {
+            p = it.getCoordinate();
+            vPoints->push_back(p);
+        };
+    }
+
+    return vPoints;
+}
+
+
+void OccGrid::SaveToFile(const std::string& filename) {
     bool bOK = pOT->writeBinaryConst(filename);
     if (!bOK) {
         cout << "Storing of Poincloud to disk failed!!" << endl;
     }
 }
 
-void OccGrid::getNodes(std::vector<std::vector<float>>& nodeOccupation) {
+
+void OccGrid::GetNodes(std::vector<std::vector<float>>& nodeOccupation) const {
     octomap::OcTree::leaf_iterator it = pOT->begin_leafs(), end = pOT->end_leafs();
     for (; it != end; ++it) {
         if (it->getOccupancy() > 0.5) {
-            nodeOccupation.push_back({it.getX(), it.getY(), it.getZ()});
+            nodeOccupation.push_back({(float)it.getX(), (float)it.getY(), (float)it.getZ()});
         }
     }
 }
 
 
-
+const OcTree * OccGrid::GetOcTree() const {
+    return this->pOT;
+}
 } // namespace ORB_SLAM3

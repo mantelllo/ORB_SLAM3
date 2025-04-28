@@ -311,4 +311,43 @@ Sophus::Sim3f Converter::toSophus(const g2o::Sim3& S) {
                          S.translation().cast<float>());
 }
 
+Eigen::Vector3f Converter::cvPinholeToNEU(const Eigen::Vector3f &vPinhole) {
+    Eigen::Vector3f vNed(vPinhole.z(), vPinhole.x(), -vPinhole.y());
+    return vNed;
+}
+
+Eigen::Vector4f Converter::cvPinholeToNEU(const Eigen::Vector4f &vPinhole) {
+    Eigen::Vector4f vNed4f = vPinhole.head(4);
+    Eigen::Vector3f vNed3f = vPinhole.head(3);
+    vNed3f = cvPinholeToNEU(vNed3f);
+    vNed4f.head(3) = vNed3f;
+    return vNed4f;
+}
+
+
+Eigen::Matrix4f Converter::cvPinholeToNEU(const Eigen::Matrix4f &mPinhole) {
+    // North-East-Up or left-handed Z-up coordinate system
+    static const Eigen::Matrix3f M = (Eigen::Matrix3f() <<
+        0, 0, 1,
+        1, 0, 0,
+        0, 1, 0).finished();
+
+    Eigen::Matrix4f mNeu = Eigen::Matrix4f::Identity();
+
+    // 1. Rotation conversion
+    Eigen::Matrix3f R_pinhole = mPinhole.block<3,3>(0,0);
+    Eigen::Matrix3f R_neu = M * R_pinhole * M.transpose();
+
+    // 2. Translation conversion (via your existing function)
+    Eigen::Vector3f t_pinhole = mPinhole.block<3,1>(0,3);
+    Eigen::Vector3f t_neu = cvPinholeToNEU(t_pinhole);
+
+    // 3. Assemble
+    mNeu.block<3,3>(0,0) = R_neu;
+    mNeu.block<3,1>(0,3) = t_neu;
+
+    return mNeu;
+}
+
+
 } //namespace ORB_SLAM

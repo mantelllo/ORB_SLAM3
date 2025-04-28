@@ -74,6 +74,10 @@ public:
     //TODO: Sophus migration, to be deleted in the future
     static Sophus::SE3<float> toSophus(const cv::Mat& T);
     static Sophus::Sim3f toSophus(const g2o::Sim3& S);
+
+    static Eigen::Vector3f cvPinholeToNEU(const Eigen::Vector3f &vPinhole);
+    static Eigen::Vector4f cvPinholeToNEU(const Eigen::Vector4f &vPinhole);
+    static Eigen::Matrix4f cvPinholeToNEU(const Eigen::Matrix4f &mPinhole);
 };
 
 }// namespace ORB_SLAM

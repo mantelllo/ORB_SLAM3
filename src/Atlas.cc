@@ -410,14 +410,15 @@ map<long unsigned int, KeyFrame*> Atlas::GetAtlasKeyframes()
     return mpIdKFs;
 }
 
-void Atlas::GenerateNewOccupancyGrid() {
+void Atlas::GenerateNewOccupancyGrid(const float octree_resolutution,
+                                     const int n_mappoint_obs_min, const int n_mappoint_max_dst) {
     using std::chrono::high_resolution_clock;
     using std::chrono::milliseconds;
     using std::chrono::duration_cast;
     using std::chrono::duration;
 
     auto t1 = high_resolution_clock::now();
-    auto pOG = std::make_shared<OccGrid>(this, 0.05f);
+    auto pOG = std::make_shared<OccGrid>(this, octree_resolutution, n_mappoint_obs_min, n_mappoint_max_dst);
     auto t2 = high_resolution_clock::now();
     auto ms_int = duration_cast<milliseconds>(t2 - t1);
 

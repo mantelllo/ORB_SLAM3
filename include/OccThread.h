@@ -14,11 +14,13 @@ namespace ORB_SLAM3
 class OccupancyThread
 {
 public:
-    explicit OccupancyThread(Atlas* pAtlas): pAtlas(pAtlas) {};
+    explicit OccupancyThread(Atlas* pAtlas, const float octree_resolution):
+        pAtlas(pAtlas), octree_resolution(octree_resolution) {};
     void Run();
 
 protected:
     Atlas* pAtlas;
+    const float octree_resolution;
 };
 
 } // ORB_SLAM3
