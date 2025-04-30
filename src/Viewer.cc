@@ -184,7 +184,7 @@ void Viewer::Run()
     pangolin::Var<bool> menuShowInertialGraph("menu.Show Inertial Graph",true,true);
     pangolin::Var<bool> menuLocalizationMode("menu.Localization Mode",false,true);
     pangolin::Var<bool> menuReset("menu.Reset",false,false);
-    pangolin::Var<bool> menuStop("menu.Stop",false,false);
+    // pangolin::Var<bool> menuStop("menu.Stop(broken)",false,false);  // broken functionality
     pangolin::Var<bool> menuStepByStep("menu.Step By Step",false,true);  // false, true
     pangolin::Var<bool> menuStep("menu.Step",false,false);
 
@@ -362,20 +362,20 @@ void Viewer::Run()
             mpSystem->ResetActiveMap();
             menuReset = false;
         }
-
-        if(menuStop)
-        {
-            if(bLocalizationMode)
-                mpSystem->DeactivateLocalizationMode();
-
-            // Stop all threads
-            mpSystem->Shutdown();
-
-            // Save camera trajectory
-            mpSystem->SaveTrajectoryEuRoC("CameraTrajectory.txt");
-            mpSystem->SaveKeyFrameTrajectoryEuRoC("KeyFrameTrajectory.txt");
-            menuStop = false;
-        }
+        //
+        // if(menuStop)
+        // {
+        //     if(bLocalizationMode)
+        //         mpSystem->DeactivateLocalizationMode();
+        //
+        //     // Stop all threads
+        //     mpSystem->Shutdown();
+        //
+        //     // Save camera trajectory
+        //     mpSystem->SaveTrajectoryEuRoC("CameraTrajectory.txt");
+        //     mpSystem->SaveKeyFrameTrajectoryEuRoC("KeyFrameTrajectory.txt");
+        //     menuStop = false;
+        // }
 
         if(Stop())
         {
@@ -390,6 +390,11 @@ void Viewer::Run()
     }
 
     SetFinish();
+    pangolin::DestroyWindow("ORB-SLAM3: Map Viewer");
+    cv::destroyWindow("ORB-SLAM3: Current Frame");
+    cv::waitKey(1);
+    cv::destroyAllWindows();
+
 }
 
 void Viewer::RequestFinish()
