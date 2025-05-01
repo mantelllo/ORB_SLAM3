@@ -410,8 +410,8 @@ map<long unsigned int, KeyFrame*> Atlas::GetAtlasKeyframes()
     return mpIdKFs;
 }
 
-void Atlas::GenerateNewOccupancyGrid(const float octree_resolutution,
-                                     const int n_mappoint_obs_min, const int n_mappoint_max_dst) {
+shared_ptr<OccGrid> Atlas::GenerateNewOccupancyGrid(const float octree_resolutution,
+                                                    const int n_mappoint_obs_min, const int n_mappoint_max_dst) {
     using std::chrono::high_resolution_clock;
     using std::chrono::milliseconds;
     using std::chrono::duration_cast;
@@ -422,17 +422,13 @@ void Atlas::GenerateNewOccupancyGrid(const float octree_resolutution,
     auto t2 = high_resolution_clock::now();
     auto ms_int = duration_cast<milliseconds>(t2 - t1);
 
-    mvpOccupancyGrids.push_back(pOG);
+    return pOG;
     // std::cout << "New OcTree! |"
     // << " idx=" << mvpOccupancyGrids.size()-1
     // << " p=" << pOG->nTotalPoints
     // << " KF=" << pOG->nTotalKeyFrames
     // << " avgDist=" << pOG->nAverageDistance
     // << " ms=" <<  ms_int.count() << endl;
-}
-
-std::vector<std::shared_ptr<OccGrid>> Atlas::GetOccupancyGrids() {
-    return mvpOccupancyGrids;
 }
 
 

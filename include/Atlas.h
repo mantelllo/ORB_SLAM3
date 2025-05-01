@@ -108,11 +108,10 @@ public:
     // Method for get data in current map
     std::vector<KeyFrame*> GetAllKeyFrames();
     std::vector<MapPoint*> GetAllMapPoints();
-    std::vector<std::shared_ptr<OccGrid>> GetOccupancyGrids();
     std::vector<MapPoint*> GetReferenceMapPoints();
     vector<Map*> GetAllMaps();
 
-    void GenerateNewOccupancyGrid(float octree_resolutution, int n_mappoint_obs_min = 7, int n_mappoint_max_dst = 10);
+    shared_ptr<OccGrid> GenerateNewOccupancyGrid(float octree_resolutution, int n_mappoint_obs_min = 7, int n_mappoint_max_dst = 10);
 
     int CountMaps();
 
@@ -154,8 +153,6 @@ protected:
     std::vector<Map*> mvpBackupMaps;
 
     Map* mpCurrentMap;
-
-    std::vector<std::shared_ptr<OccGrid>> mvpOccupancyGrids;
 
     std::vector<GeometricCamera*> mvpCameras;
 

@@ -151,19 +151,19 @@ PYBIND11_MODULE(orbslam3_python, m) {
                 }
                 return trajectory;
             })
-        .def("GetOccupancyGrids",
-            [](ORB_SLAM3::System &self) {
-                return self.mpAtlas->GetOccupancyGrids();
-            })
         .def("GenerateNewOccupancyGrid",
-            [](ORB_SLAM3::System &self, const float octree_resolution,
-                const int n_mappoint_obs_min, const int n_mappoint_max_dst) -> std::shared_ptr<ORB_SLAM3::OccGrid> {
-                Py_BEGIN_ALLOW_THREADS
-                self.mpAtlas->GenerateNewOccupancyGrid(octree_resolution, n_mappoint_obs_min, n_mappoint_max_dst);
-                Py_END_ALLOW_THREADS
+            [](ORB_SLAM3::System &self, const float octree_resolution, const int n_mappoint_obs_min,
+                                                                         const int n_mappoint_max_dst) {
+                py::gil_scoped_release release;
+                // …runs your long C++ call without holding Python’s GIL…
+                auto grid = self.mpAtlas->GenerateNewOccupancyGrid(
+                                 octree_resolution,
+                                 n_mappoint_obs_min,
+                                 n_mappoint_max_dst);
+                // …and when ‘release’ goes out of scope at the end of this lambda,
+                // the GIL is automatically re-acquired before converting ‘grid’ to PyObject.
+                return grid;
 
-                auto grids = self.mpAtlas->GetOccupancyGrids();
-                return grids[grids.size() - 1];
             }, py::arg("octree_resolution"), py::arg("n_mappoint_obs_min"), py::arg("n_mappoint_max_dst"))
         .def("GetMapID",
             [](ORB_SLAM3::System &self) {
@@ -340,6 +340,12 @@ PYBIND11_MODULE(orbslam3_python, m) {
               vector<shared_ptr<ORB_SLAM3::Frontier>>* frontiers = ORB_SLAM3::FrontierDetector::DetectFrontiers(pOG);
               return frontiers;
           });
+
+    m.def("LoadOccGrid",
+      [](const string filename) {
+          shared_ptr<ORB_SLAM3::OccGrid> pOG = make_shared<ORB_SLAM3::OccGrid>(filename);
+          return pOG;
+      });
 
     // m.def("ConvertVector3f",
     //     [](const Eigen::Vector3f& v) {
