@@ -9,12 +9,11 @@
 
 
 namespace ORB_SLAM3 {
-    std::vector<std::shared_ptr<Frontier>>* FrontierDetector::DetectFrontiers(const shared_ptr<OccGrid>& pOG) {
-        auto *frontiers = new std::vector<std::shared_ptr<Frontier>>();
-        const OcTree *tree = pOG->GetOcTree();
+    void FrontierDetector::DetectFrontiers(const shared_ptr<OccGrid>& pOG, std::vector<std::shared_ptr<Frontier>>& frontiers) {
+        const shared_ptr<OcTree> tree = pOG->GetOcTree();
 
         if (!tree) {
-            return nullptr;
+            return;
         }
 
         std::set<octomap::OcTreeKey, OcTreeKeyComparator> visited;  // Keeps track of visited nodes
@@ -25,21 +24,19 @@ namespace ORB_SLAM3 {
                 const octomap::OcTreeKey& key = it.getKey();
 
                 // Check if this voxel is a frontier and hasn't been visited
-                if (visited.find(key) == visited.end() && isFrontier(tree, &key)) {
+                if (visited.find(key) == visited.end() && isFrontier(tree, key)) {
                     // Perform BFS to gather all frontier points in this cluster
                     auto frontier = clusterFrontier(tree, key, visited);
-                    frontiers->push_back(std::make_shared<Frontier>(frontier));
+                    frontiers.push_back(std::make_shared<Frontier>(frontier));
                 }
             }
         }
-
-        return frontiers;
     }
 
 
     // Checks if a voxel is a frontier (free voxel with at least one unknown neighbor)
-    bool FrontierDetector::isFrontier(const octomap::OcTree* tree, const octomap::OcTreeKey* key) {
-        if (!tree || !key) return false;
+    bool FrontierDetector::isFrontier(const shared_ptr<OcTree>& tree, const OcTreeKey& key) {
+        if (!tree) return false;
 
         for (int dx = -1; dx <= 1; ++dx) {
             for (int dy = -1; dy <= 1; ++dy) {
@@ -47,7 +44,7 @@ namespace ORB_SLAM3 {
                     if (dx == 0 && dy == 0 && dz == 0) continue;  // Skip self
 
                     // Calculate neighbor key
-                    octomap::OcTreeKey neighborKey = *key;
+                    octomap::OcTreeKey neighborKey = key;
                     neighborKey.k[0] += dx;
                     neighborKey.k[1] += dy;
                     neighborKey.k[2] += dz;
@@ -63,9 +60,9 @@ namespace ORB_SLAM3 {
     }
 
 
-    Frontier FrontierDetector::clusterFrontier(const octomap::OcTree* tree,
-                                               const octomap::OcTreeKey& startKey,
-                                               std::set<octomap::OcTreeKey, OcTreeKeyComparator>& visited) {
+    Frontier FrontierDetector::clusterFrontier(const shared_ptr<OcTree>& tree,
+                                                const OcTreeKey& startKey,
+                                                std::set<OcTreeKey, OcTreeKeyComparator>& visited) {
         Frontier frontier;
         std::queue<octomap::OcTreeKey> toVisit;
 
@@ -95,7 +92,7 @@ namespace ORB_SLAM3 {
                         // Check if the neighbor is unvisited and a frontier
                         if (visited.find(neighborKey) == visited.end()) {
                             octomap::OcTreeNode* neighborNode = tree->search(neighborKey);
-                            if (neighborNode && neighborNode->getOccupancy() < 0.5 && isFrontier(tree, &neighborKey)) {
+                            if (neighborNode && neighborNode->getOccupancy() < 0.5 && isFrontier(tree, neighborKey)) {
                                 toVisit.push(neighborKey);
                             }
                         }

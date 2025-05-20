@@ -30,13 +30,13 @@ namespace ORB_SLAM3 {
 
     class FrontierDetector {
     public:
-        static std::vector<std::shared_ptr<Frontier>>* DetectFrontiers(const shared_ptr<OccGrid>& pOG);
+        static void DetectFrontiers(const shared_ptr<OccGrid>& pOG, std::vector<std::shared_ptr<Frontier>>& frontiers);
 
     private:
-        static bool isFrontier(const OcTree* tree, const octomap::OcTreeKey* key);
-        static Frontier clusterFrontier(const OcTree* tree,
+        static bool isFrontier(const shared_ptr<OcTree>& tree, const OcTreeKey& key);
+        static Frontier clusterFrontier(const shared_ptr<OcTree>& tree,
                                         const OcTreeKey& startKey,
-                                        std::set<octomap::OcTreeKey, OcTreeKeyComparator>& visited);
+                                        std::set<OcTreeKey, OcTreeKeyComparator>& visited);
 
     };
 }

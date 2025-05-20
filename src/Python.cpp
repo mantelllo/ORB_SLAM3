@@ -303,7 +303,7 @@ PYBIND11_MODULE(orbslam3_python, m) {
             return numpy_array;
         })
         .def("PointCloudWithProba", [](ORB_SLAM3::OccGrid &self) {
-            const octomap::OcTree *octree = self.GetOcTree();  // Assuming a function to get the OctoMap instance
+            const shared_ptr<OcTree> octree = self.GetOcTree();  // Assuming a function to get the OctoMap instance
             if (!octree) {
                 throw std::runtime_error("OctoMap is not initialized!");
             }
@@ -337,7 +337,8 @@ PYBIND11_MODULE(orbslam3_python, m) {
 
     m.def("DetectFrontiers",
           [](const std::shared_ptr<ORB_SLAM3::OccGrid>& pOG) {
-              vector<shared_ptr<ORB_SLAM3::Frontier>>* frontiers = ORB_SLAM3::FrontierDetector::DetectFrontiers(pOG);
+              vector<shared_ptr<ORB_SLAM3::Frontier>> frontiers;
+              ORB_SLAM3::FrontierDetector::DetectFrontiers(pOG, frontiers);
               return frontiers;
           });
 

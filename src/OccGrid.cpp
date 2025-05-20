@@ -10,10 +10,10 @@ namespace ORB_SLAM3
 {
 
 
-OccGrid::OccGrid(Atlas* pAtlas, float resolution, const int n_mappoint_obs_min,
+OccGrid::OccGrid(Atlas *pAtlas, float resolution, const int n_mappoint_obs_min,
                  const int n_mappoint_max_dst) {
     ts = std::time(nullptr);
-    pOT = new OcTree(resolution);
+    pOT = make_shared<OcTree>(resolution);
 
     std::vector<KeyFrame*> mvpKeyFrames = pAtlas->GetAllKeyFrames();
     Pointcloud pPointcloud;
@@ -86,12 +86,12 @@ OccGrid::OccGrid(Atlas* pAtlas, float resolution, const int n_mappoint_obs_min,
 }
 
 
-OccGrid::OccGrid(OcTree *pOT) {
-    this->pOT = pOT;
+OccGrid::OccGrid(shared_ptr<OcTree> pOT) {
+    this->pOT = std::move(pOT);
 }
 
 OccGrid::OccGrid(string treePath) {
-    auto pOT = new OcTree(std::move(treePath));
+    auto pOT = make_shared<OcTree>(std::move(treePath));
     this->pOT = pOT;
 };
 
@@ -115,7 +115,7 @@ double OccGrid::Entropy() const {
 }
 
 
-double OccGrid::InformationGainOver(const OccGrid* otherOG) const {
+double OccGrid::InformationGainOver(const shared_ptr<OccGrid>& otherOG) const {
     double e1 = Entropy();
     double e2 = otherOG->Entropy();
     return e1 - e2;
@@ -155,7 +155,8 @@ void OccGrid::GetNodes(std::vector<std::vector<float>>& nodeOccupation) const {
 }
 
 
-const OcTree * OccGrid::GetOcTree() const {
+const shared_ptr<OcTree> OccGrid::GetOcTree() const {
     return this->pOT;
 }
+
 } // namespace ORB_SLAM3
